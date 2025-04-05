@@ -8,6 +8,8 @@ from time import time
 ROLES = ['ADMIN', 'AUDITOR', 'USER']
 RIGHTS = ['READ', 'WRITE', 'EXECUTE', 'SHARE']
 
+#NOTE: The method through which read-access is granted to audit log is through "AUDITOR" role, however this also applies universally to all other objects..
+
 #Default rights that a given role gets REGARDLESS of dac permissions
 ROLE_DEFAULT_RIGHTS = {
     'ADMIN': ['READ', 'WRITE', 'EXECUTE', 'SHARE'],

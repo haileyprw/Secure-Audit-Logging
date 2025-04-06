@@ -1,4 +1,5 @@
 from time import time
+from logging import print_to_log
 
 #Hybrid RBAC & DAC
 #Roles override discretionary access
@@ -38,13 +39,16 @@ rbac_assignment_pairs = {'JANE': 'ADMIN', 'JOE': 'AUDITOR', 'BOB': 'USER', 'JOHN
 # (Boolean whether granted, sub, obj, action)
 def check_authorization(sub, obj, action):
     #validity check
-    #TODO: handle invalid subject/object/action, potentially seperate log entry for malformed requests
+    # handle invalid subject/object/action, potentially seperate log entry for malformed requests
     if (sub not in subjects):
-        pass
+        print_to_log("Invalid subject: " + sub + " attempted to " + action + " " + obj)
+        return (False, sub, obj, action)
     if (obj not in objects):
-        pass
+        print_to_log("Invalid object: " + sub + " attempted to " + action + " " + obj)
+        return (False, sub, obj, action)
     if (action not in RIGHTS):
-        pass
+        print_to_log("Invalid action: " + sub + " attempted to " + action + " " + obj)
+        return (False, sub, obj, action)
 
     #grab role for later use
     SUB_ROLE = rbac_assignment_pairs.get(sub)
@@ -64,12 +68,13 @@ def check_authorization(sub, obj, action):
 
     #check universal read only
     if (obj in UNIVERSAL_READ_ONLY and action != "READ"):
-        #TODO: log attempted non-read action of read-only file (can technically be done outside of this function using the tuple)
+        # log attempted non-read action of read-only file (can technically be done outside of this function using the tuple)
+        print_to_log(sub + " attempted to " + action + " the following read-only file: " + obj)
         return (False, sub, obj, action)
 
     #check default role
     if (action in DEFAULT_ROLE_PERMISSIONS):
-        #TODO: Decide whether to log actions that are performed with default permissions from roles
+        # Default permission is not logged, however it could be
         return (True, sub, obj, action)
     
     #check DAC permissions
@@ -77,7 +82,8 @@ def check_authorization(sub, obj, action):
         return (True, sub, obj, action)
     
     #default
-    #TODO: log attempted action
+    # log attempted action
+    print_to_log("Denied action: " + sub + " tried to " + action + " " + obj)
     return (False, sub, obj, action)
 
 # Assigns role to subject
@@ -86,15 +92,18 @@ def check_authorization(sub, obj, action):
 # Return: True if success, False if invalid role or already assigned identical role
 def assign_role(sub, role):
     if role not in ROLES:
-        #TODO: Potentially log malformed role
+        # log malformed role
+        print_to_log("Malformed role: " + role + " given to " + sub)
         return False
     
     if sub not in subjects:
-        #TODO: Potentially log malformed subject
+        # log malformed subject
+        print_to_log("Malformed subject: " + role + " given to " + sub)
         return False
     
     if rbac_assignment_pairs.get(sub) == role:
-        #TODO: Potentially log redundant role assignment
+        # log redundant role assignment
+        print_to_log("Redundant role assignment: " + role + " given to " + sub)
         return False
     
     rbac_assignment_pairs[sub] = role
@@ -107,12 +116,15 @@ def assign_role(sub, role):
 # int expiry: time in seconds that this pair will be valid/active for
 def grant_permission(sub, obj, permission, expiry=0):
     #validity check
-    #TODO: handle invalid subject/object/action, potentially seperate log entry for malformed requests
+    # handle invalid subject/object/action, potentially seperate log entry for malformed requests
     if (sub not in subjects):
+        print_to_log("Invalid subject: " + permission + " not given to " + sub + " on " + obj)
         pass
     if (obj not in objects):
+        print_to_log("Invalid object: " + permission + " not given to " + sub + " on " + obj)
         pass
     if (permission not in RIGHTS and permission != 'OWN'):
+        print_to_log("Invalid right: " + permission + " not given to " + sub + " on " + obj)
         pass
 
     #Permanent non-expiring entry indicating by expiry default value of 0 (seconds)
@@ -126,7 +138,8 @@ def grant_permission(sub, obj, permission, expiry=0):
         dac_permission_pairs.append(pair)
         return True
     else:
-        #TODO: potentially log attempted redundant permission grant request
+        # log attempted redundant permission grant request
+        print_to_log("Redundant permission: " + permission + " not given to " + sub + " on " + obj)
         return False
 
 # Removes all entries of matching parameters from dac_permission_pairs
@@ -153,3 +166,49 @@ def is_owner(sub, obj):
                 return True
     else:
         return False
+    
+
+
+
+# Test cases:
+# Anything that says granted should not show up in the log, everything that says denied should be seen in log
+# Admin
+check_authorization("JANE", "something.doc", "READ") # granted
+check_authorization("JANE", "something.doc", "WRITE") # granted
+check_authorization("JANE", "something.doc", "EXECUTE") # granted
+check_authorization("JANE", "something.doc", "SHARE") # granted
+
+# Auditor 
+check_authorization("JOE", "something.doc", "READ") # granted
+check_authorization("JOE", "something.doc", "WRITE") # denied
+check_authorization("JOE", "something.doc", "EXECUTE") # denied
+check_authorization("JOE", "something.doc", "SHARE") # denied
+
+# User
+check_authorization("JOHN", "something.doc", "READ") # denied
+check_authorization("JOHN", "something.doc", "WRITE") # denied
+check_authorization("JOHN", "something.doc", "EXECUTE") # denied
+check_authorization("JOHN", "something.doc", "SHARE") # denied
+
+# Grant test
+grant_permission("JOHN", "something.doc", "READ", 10)
+check_authorization("JOHN", "something.doc", "READ") # granted
+
+# Malformed grants
+grant_permission("JOHN", "something.doc", "REA", 10) # denied
+grant_permission("JOHN", "something.do", "EXECUTE", 10) # denied
+grant_permission("JOH", "something.doc", "EXECUTE", 10) # denied
+
+# Malformed authorization
+check_authorization("JAN", "something.doc", "READ") # denied
+check_authorization("JANE", "something.do", "READ") # denied
+check_authorization("JANE", "something.doc", "REA") # denied
+
+# Read-only test
+check_authorization("JANE", "log.txt", "READ") # granted
+check_authorization("JOE", "log.txt", "READ") # granted
+check_authorization("JANE", "log.txt", "WRITE") # denied
+check_authorization("JANE", "log.txt", "EXECUTE") # denied
+check_authorization("JANE", "log.txt", "SHARE") # denied
+check_authorization("JOE", "log.txt", "WRITE") # denied
+check_authorization("BOB", "log.txt", "WRITE") # denied

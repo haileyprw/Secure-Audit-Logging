@@ -41,13 +41,13 @@ def check_authorization(sub, obj, action):
     #validity check
     # handle invalid subject/object/action, potentially seperate log entry for malformed requests
     if (sub not in subjects):
-        print_to_log("Invalid subject: " + sub + " attempted to " + action + " " + obj)
+        print_to_log(f"Invalid subject: {sub} attempted to {action} {obj}")
         return (False, sub, obj, action)
     if (obj not in objects):
-        print_to_log("Invalid object: " + sub + " attempted to " + action + " " + obj)
+        print_to_log(f"Invalid object: {sub} attempted to {action} {obj}")
         return (False, sub, obj, action)
     if (action not in RIGHTS):
-        print_to_log("Invalid action: " + sub + " attempted to " + action + " " + obj)
+        print_to_log(f"Invalid right: {sub} attempted to {action} {obj}")
         return (False, sub, obj, action)
 
     #grab role for later use
@@ -69,7 +69,7 @@ def check_authorization(sub, obj, action):
     #check universal read only
     if (obj in UNIVERSAL_READ_ONLY and action != "READ"):
         # log attempted non-read action of read-only file (can technically be done outside of this function using the tuple)
-        print_to_log(sub + " attempted to " + action + " the following read-only file: " + obj)
+        print_to_log(f"{sub} attempted to {action} the following read-only file: {obj}")
         return (False, sub, obj, action)
 
     #check default role
@@ -83,7 +83,7 @@ def check_authorization(sub, obj, action):
     
     #default
     # log attempted action
-    print_to_log("Denied action: " + sub + " tried to " + action + " " + obj)
+    print_to_log(f"Denied action: {sub} tried to {action} {obj}")
     return (False, sub, obj, action)
 
 # Assigns role to subject
@@ -93,17 +93,17 @@ def check_authorization(sub, obj, action):
 def assign_role(sub, role):
     if role not in ROLES:
         # log malformed role
-        print_to_log("Malformed role: " + role + " given to " + sub)
+        print_to_log(f"Malformed role: {role}  given to {sub}")
         return False
     
     if sub not in subjects:
         # log malformed subject
-        print_to_log("Malformed subject: " + role + " given to " + sub)
+        print_to_log(f"Malformed subject: {role} given to {sub}")
         return False
     
     if rbac_assignment_pairs.get(sub) == role:
         # log redundant role assignment
-        print_to_log("Redundant role assignment: " + role + " given to " + sub)
+        print_to_log(f"Redundant role assignment: {role} given to {sub}")
         return False
     
     rbac_assignment_pairs[sub] = role
@@ -118,14 +118,14 @@ def grant_permission(sub, obj, permission, expiry=0):
     #validity check
     # handle invalid subject/object/action, potentially seperate log entry for malformed requests
     if (sub not in subjects):
-        print_to_log("Invalid subject: " + permission + " not given to " + sub + " on " + obj)
-        pass
+        print_to_log(f"Invalid subject: {permission} not given to {sub} on {obj}")
+        return
     if (obj not in objects):
-        print_to_log("Invalid object: " + permission + " not given to " + sub + " on " + obj)
-        pass
+        print_to_log(f"Invalid object: {permission} not given to {sub} on {obj}")
+        return
     if (permission not in RIGHTS and permission != 'OWN'):
-        print_to_log("Invalid right: " + permission + " not given to " + sub + " on " + obj)
-        pass
+        print_to_log(f"Invalid right: {permission} not given to {sub} on {obj}")
+        return
 
     #Permanent non-expiring entry indicating by expiry default value of 0 (seconds)
     if expiry == 0:
@@ -139,7 +139,7 @@ def grant_permission(sub, obj, permission, expiry=0):
         return True
     else:
         # log attempted redundant permission grant request
-        print_to_log("Redundant permission: " + permission + " not given to " + sub + " on " + obj)
+        print_to_log(f"Redundant permission: {permission} not given to {sub} on {obj}")
         return False
 
 # Removes all entries of matching parameters from dac_permission_pairs

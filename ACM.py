@@ -114,18 +114,19 @@ def assign_role(sub, role):
 # str obj: object that subject is to have right for
 # str permission: the permission to be granted in this request
 # int expiry: time in seconds that this pair will be valid/active for
+# Return: True if permission granted, False if not (for any reason)
 def grant_permission(sub, obj, permission, expiry=0):
     #validity check
     # handle invalid subject/object/action, potentially seperate log entry for malformed requests
     if (sub not in subjects):
         print_to_log(f"Invalid subject: {permission} not given to {sub} on {obj}")
-        return
+        return False
     if (obj not in objects):
         print_to_log(f"Invalid object: {permission} not given to {sub} on {obj}")
-        return
+        return False
     if (permission not in RIGHTS and permission != 'OWN'):
         print_to_log(f"Invalid right: {permission} not given to {sub} on {obj}")
-        return
+        return False
 
     #Permanent non-expiring entry indicating by expiry default value of 0 (seconds)
     if expiry == 0:

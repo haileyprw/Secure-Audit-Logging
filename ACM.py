@@ -51,7 +51,7 @@ def check_authorization(ACM, sub, obj, action):
     dac_permission_pairs = ACM.get("dac_permission_pairs")
 
     #validity check
-    # handle invalid subject/object/action, potentially seperate log entry for malformed requests
+    # handle invalid subject/object/action, potentially separate log entry for malformed requests
     if (sub not in subjects):
         print_to_log(f"Invalid subject: {sub} attempted to {action} {obj}")
         return (False, sub, obj, action)
